@@ -9,77 +9,65 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
         body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        .checked-item { background-color: #f0fdf4; border-color: #bbf7d0; color: #15803d; text-decoration: line-through; opacity: 0.7; }
-        .checkbox-custom { width: 20px; height: 20px; border: 2px solid #e5e7eb; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s; }
-        .checked-item .checkbox-custom { background-color: #22c55e; border-color: #22c55e; }
-        .checked-item .checkbox-custom::after { content: '\f00c'; font-family: 'Font Awesome 5 Free'; font-weight: 900; color: white; font-size: 10px; }
-        .loading-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.85); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; transition: opacity 0.3s; }
+        .checked-item { background-color: #fef2f2; border-color: #fee2e2; color: #ef4444; }
+        .checked-item span { color: #ef4444; font-weight: 600; }
+        .loading-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; transition: opacity 0.3s; }
+        .member-chip { transition: all 0.2s; border: 1px solid #f3f4f6; background-color: #f9fafb; color: #4b5563; }
+        .member-chip:hover { background-color: #f3f4f6; }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen text-gray-800">
+    <!-- 로딩 화면 -->
     <div id="loading" class="loading-overlay">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-        <p class="text-sm text-gray-500">데이터를 불러오는 중입니다...</p>
+        <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-4"></div>
+        <p class="text-sm text-gray-500 font-medium">데이터를 불러오는 중입니다...</p>
     </div>
 
-    <div class="max-w-5xl mx-auto px-4 py-8">
+    <div class="max-w-4xl mx-auto px-4 py-8">
         <!-- 헤더 -->
         <header class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
             <div>
-                <h1 class="text-2xl font-bold flex items-center gap-2">
-                    <i class="fas fa-tshirt text-blue-600"></i>
+                <h1 class="text-xl font-bold flex items-center gap-2 text-gray-900">
+                    <i class="fas fa-tshirt text-blue-500"></i>
                     티셔츠 불출 관리 대시보드
                 </h1>
-                <p class="text-gray-500 text-sm mt-1">어느 기기에서든 실시간으로 동기화됩니다. (Cloud Storage 적용됨)</p>
+                <p class="text-gray-400 text-xs mt-1">실시간 클라우드 동기화 모드</p>
             </div>
             
             <div class="relative">
-                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-300 text-sm"></i>
                 <input type="text" id="searchInput" placeholder="이름 검색..." 
-                    class="pl-10 pr-4 py-2 border border-gray-200 rounded-lg w-full md:w-64 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    class="pl-9 pr-4 py-2 bg-white border border-gray-100 rounded-lg w-full md:w-64 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all">
             </div>
         </header>
 
         <!-- 요약 통계 -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
-                <div>
-                    <p class="text-xs text-gray-500 font-semibold uppercase tracking-wider">전체 인원</p>
-                    <h3 class="text-2xl font-bold" id="totalCount">0</h3>
-                </div>
-                <div class="bg-blue-50 p-3 rounded-lg text-blue-600"><i class="fas fa-users text-xl"></i></div>
+        <div class="grid grid-cols-3 gap-4 mb-8">
+            <div class="bg-white p-4 rounded-xl border border-gray-100 text-center shadow-sm">
+                <p class="text-[10px] text-gray-400 font-bold uppercase mb-1">전체</p>
+                <h3 class="text-xl font-bold text-gray-800" id="totalCount">0</h3>
             </div>
-            <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
-                <div>
-                    <p class="text-xs text-green-600 font-semibold uppercase tracking-wider">불출 완료</p>
-                    <h3 class="text-2xl font-bold" id="completedCount">0</h3>
-                </div>
-                <div class="bg-green-50 p-3 rounded-lg text-green-600"><i class="fas fa-check-circle text-xl"></i></div>
+            <div class="bg-white p-4 rounded-xl border border-gray-100 text-center shadow-sm">
+                <p class="text-[10px] text-green-500 font-bold uppercase mb-1">수령</p>
+                <h3 class="text-xl font-bold text-green-600" id="completedCount">0</h3>
             </div>
-            <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
-                <div>
-                    <p class="text-xs text-orange-600 font-semibold uppercase tracking-wider">미수령</p>
-                    <h3 class="text-2xl font-bold" id="remainingCount">0</h3>
-                </div>
-                <div class="bg-orange-50 p-3 rounded-lg text-orange-600"><i class="fas fa-clock text-xl"></i></div>
+            <div class="bg-white p-4 rounded-xl border border-gray-100 text-center shadow-sm">
+                <p class="text-[10px] text-orange-400 font-bold uppercase mb-1">미수령</p>
+                <h3 class="text-xl font-bold text-orange-500" id="remainingCount">0</h3>
             </div>
         </div>
 
         <!-- 리스트 컨테이너 -->
-        <div id="dashboardContent" class="space-y-6">
+        <div id="dashboardContent" class="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-50">
             <!-- 자바스크립트에서 렌더링됨 -->
         </div>
 
-        <!-- 푸터 제어 및 개발자 정보 -->
-        <footer class="mt-12 mb-20 text-center space-y-4">
-            <button onclick="resetData()" class="text-gray-400 hover:text-red-500 text-sm font-medium flex items-center justify-center gap-2 mx-auto transition-colors">
-                <i class="fas fa-redo"></i> 전체 데이터 초기화
+        <!-- 푸터 -->
+        <footer class="mt-12 mb-10 text-center">
+            <button onclick="resetData()" class="text-gray-300 hover:text-red-400 text-[11px] font-medium transition-colors">
+                데이터 초기화
             </button>
-            <div class="pt-8 border-t border-gray-200">
-                <p class="text-gray-400 text-xs">
-                    <span class="font-semibold">개발자: 김병찬</span>
-                </p>
-            </div>
+            <p class="text-gray-300 text-[10px] mt-4">개발자: 김병찬</p>
         </footer>
     </div>
 
@@ -89,42 +77,43 @@
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // 환경 설정
         const firebaseConfig = JSON.parse(__firebase_config);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'tshirt-app-v2';
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'tshirt-manager-v3';
         
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
         const initialData = [
-            { id: 'm95', gender: '남자', size: '95', members: ['임성민', '윤상철', '최시원', '황석출'] },
-            { id: 'm100', gender: '남자', size: '100', members: ['이수중', '이보영', '이승환', '김상기', '김건호', '김근호', '김영진', '김옥수', '김종혁', '김해용', '박남순', '박재만', '백상현', '손원철', '이숙자', '이재경', '이태관', '하우태', '홍정헌', '황석현'] },
-            { id: 'm105', gender: '남자', size: '105', members: ['김병찬', '김상훈', '김용철', '김정일', '손영수', '이재민', '이청호', '조현곤', '차동환', '김수', '손경민'] },
-            { id: 'm110', gender: '남자', size: '110', members: ['조창재', '박성진', '박학봉', '정주한'] },
-            { id: 'w85', gender: '여자', size: '85', members: ['최유경'] },
-            { id: 'w90', gender: '여자', size: '90', members: ['장수진', '노석영', '류시영', '전지현', '조목화', '한미희', '한효민'] },
-            { id: 'w95', gender: '여자', size: '95', members: ['권오령', '도병국', '박주은', '손지현', '유윤화', '이혜지', '조정수', '차신효'] },
-            { id: 'w100', gender: '여자', size: '100', members: ['김을숙', '정경희', '정미경'] }
+            { id: 'm95', label: '남자 95', members: ['임성민', '윤상철', '최시원', '황석출'] },
+            { id: 'm100', label: '남자 100', members: ['이수중', '이보영', '이승환', '김상기', '김건호', '김근호', '김영진', '김옥수', '김종혁', '김해용', '박남순', '박재만', '백상현', '손원철', '이숙자', '이재경', '이태관', '하우태', '홍정헌', '황석현'] },
+            { id: 'm105', label: '남자 105', members: ['김병찬', '김상훈', '김용철', '김정일', '손영수', '이재민', '이청호', '조현곤', '차동환', '김수', '손경민'] },
+            { id: 'm110', label: '남자 110', members: ['조창재', '박성진', '박학봉', '정주한'] },
+            { id: 'w85', label: '여자 85', members: ['최유경'] },
+            { id: 'w90', label: '여자 90', members: ['장수진', '노석영', '류시영', '전지현', '조목화', '한미희', '한효민'] },
+            { id: 'w95', label: '여자 95', members: ['권오령', '도병국', '박주은', '손지현', '유윤화', '이혜지', '조정수', '차신효'] },
+            { id: 'w100', label: '여자 100', members: ['김을숙', '정경희', '정미경'] }
         ];
 
         let receivedStatus = {};
         let user = null;
+        let isDataLoaded = false;
 
         const hideLoading = () => {
             const loader = document.getElementById('loading');
             if (loader) loader.style.display = 'none';
         };
 
-        // 로딩이 너무 오래 걸릴 경우(3초) 강제로 해제하는 타임아웃
-        const loadingTimeout = setTimeout(() => {
-            console.warn("Loading timeout reached. Forcing UI render.");
-            hideLoading();
-            renderDashboard();
-            updateStats();
-        }, 3000);
+        // 안전 장치: 로딩이 2초 이상 지속되면 강제 해제
+        setTimeout(() => {
+            if (!isDataLoaded) {
+                console.log("Forcing load due to timeout");
+                hideLoading();
+                renderDashboard();
+            }
+        }, 2000);
 
-        const getStatusDocRef = () => doc(db, 'artifacts', appId, 'public', 'data', 'status_collection', 'tshirt_status');
+        const getStatusDocRef = () => doc(db, 'artifacts', appId, 'public', 'data', 'v1', 'status_data');
 
         const initAuth = async () => {
             try {
@@ -134,34 +123,31 @@
                     await signInAnonymously(auth);
                 }
             } catch (e) {
-                console.error("Auth failed:", e);
+                console.error("Auth error:", e);
                 hideLoading();
             }
         };
 
         onAuthStateChanged(auth, (u) => {
             user = u;
-            if (user) {
-                subscribeToData();
-            }
+            if (user) subscribeToData();
         });
 
         function subscribeToData() {
             const statusDoc = getStatusDocRef();
             onSnapshot(statusDoc, (docSnap) => {
-                clearTimeout(loadingTimeout); // 데이터 수신 시 타임아웃 해제
+                isDataLoaded = true;
                 if (docSnap.exists()) {
                     receivedStatus = docSnap.data().status || {};
-                } else {
-                    receivedStatus = {};
                 }
                 renderDashboard();
                 updateStats();
                 hideLoading();
             }, (error) => {
-                console.error("Firestore error:", error);
+                console.error("Snapshot error:", error);
+                isDataLoaded = true;
                 hideLoading();
-                renderDashboard(); // 에러 발생 시에도 빈 데이터로 렌더링 시도
+                renderDashboard();
             });
         }
 
@@ -171,20 +157,20 @@
                 const statusDoc = getStatusDocRef();
                 await setDoc(statusDoc, { status: receivedStatus }, { merge: true });
             } catch (e) {
-                console.error("Save failed:", e);
+                console.error("Sync error:", e);
             }
         }
 
         window.toggleStatus = async function(member, groupId) {
             const key = `${member}-${groupId}`;
             receivedStatus[key] = !receivedStatus[key];
-            renderDashboard(); // 즉시 UI 업데이트
+            renderDashboard();
             updateStats();
             await updateCloudStorage();
         }
 
         window.resetData = async function() {
-            if(confirm('모든 수령 현황을 초기화하시겠습니까? 다른 기기에서도 모두 초기화됩니다.')) {
+            if(confirm('데이터를 초기화하시겠습니까?')) {
                 receivedStatus = {};
                 renderDashboard();
                 updateStats();
@@ -215,52 +201,45 @@
 
             initialData.forEach(group => {
                 const filteredMembers = group.members.filter(m => m.toLowerCase().includes(searchTerm));
-                
                 if (filteredMembers.length === 0 && searchTerm !== '') return;
 
-                const groupCompleted = group.members.filter(m => receivedStatus[`${m}-${group.id}`]).length;
-                const progress = (groupCompleted / group.members.length) * 100;
+                const row = document.createElement('div');
+                row.className = 'flex items-start p-4 md:p-6 gap-6';
 
-                const groupSection = document.createElement('div');
-                groupSection.className = 'bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden';
-                
-                let membersHtml = filteredMembers.map(member => {
+                const labelBox = `
+                    <div class="w-24 shrink-0">
+                        <h4 class="text-sm font-bold text-gray-700">${group.label} <span class="text-gray-300 font-normal ml-1">호</span></h4>
+                    </div>
+                `;
+
+                const countBox = `
+                    <div class="w-10 h-10 shrink-0 bg-blue-50 rounded-full flex items-center justify-center">
+                        <span class="text-blue-600 font-bold text-sm">${group.members.length}</span>
+                    </div>
+                `;
+
+                const chips = filteredMembers.map(member => {
                     const isChecked = receivedStatus[`${member}-${group.id}`];
                     return `
                         <button onclick="toggleStatus('${member}', '${group.id}')" 
-                            class="flex items-center gap-3 p-3 rounded-lg border transition-all text-left hover:shadow-sm ${isChecked ? 'checked-item' : 'bg-white border-gray-100 hover:border-blue-200 hover:bg-blue-50'}">
-                            <div class="checkbox-custom"></div>
-                            <span class="font-medium truncate">${member}</span>
+                            class="member-chip px-3 py-1.5 rounded-md text-xs font-medium ${isChecked ? 'checked-item' : ''}">
+                            <span>${member}</span>
                         </button>
                     `;
                 }).join('');
 
-                groupSection.innerHTML = `
-                    <div class="p-4 bg-gray-50/50 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div class="flex items-center gap-3">
-                            <span class="bg-slate-800 text-white px-3 py-1 rounded-full text-xs font-bold uppercase">
-                                ${group.gender} ${group.size}호
-                            </span>
-                            <span class="text-sm text-gray-500 font-medium">${group.members.length}명</span>
-                        </div>
-                        <div class="flex items-center gap-3 flex-1 max-w-xs">
-                            <div class="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                                <div class="h-full bg-green-500 transition-all" style="width: ${progress}%"></div>
-                            </div>
-                            <span class="text-[10px] font-bold text-gray-400 w-8">${Math.round(progress)}%</span>
-                        </div>
-                    </div>
-                    <div class="p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                        ${membersHtml}
+                row.innerHTML = `
+                    ${labelBox}
+                    ${countBox}
+                    <div class="flex flex-wrap gap-2">
+                        ${chips}
                     </div>
                 `;
-                container.appendChild(groupSection);
+                container.appendChild(row);
             });
         }
 
         document.getElementById('searchInput').addEventListener('input', renderDashboard);
-        
-        // 페이지가 로드되면 즉시 기본 렌더링 수행
         renderDashboard();
         updateStats();
         initAuth();
