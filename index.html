@@ -13,12 +13,13 @@
         .checkbox-custom { width: 20px; height: 20px; border: 2px solid #e5e7eb; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s; }
         .checked-item .checkbox-custom { background-color: #22c55e; border-color: #22c55e; }
         .checked-item .checkbox-custom::after { content: '\f00c'; font-family: 'Font Awesome 5 Free'; font-weight: 900; color: white; font-size: 10px; }
-        .loading-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.7); display: flex; align-items: center; justify-content: center; z-index: 50; }
+        .loading-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.85); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; transition: opacity 0.3s; }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen text-gray-800">
     <div id="loading" class="loading-overlay">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+        <p class="text-sm text-gray-500">데이터를 불러오는 중입니다...</p>
     </div>
 
     <div class="max-w-5xl mx-auto px-4 py-8">
@@ -86,11 +87,11 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // 환경 설정 (자동 주입되는 값 사용)
+        // 환경 설정
         const firebaseConfig = JSON.parse(__firebase_config);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'tshirt-app';
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'tshirt-app-v2';
         
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -110,11 +111,21 @@
         let receivedStatus = {};
         let user = null;
 
-        // Firestore 경로 설정 (필수: 6개의 세그먼트 사용)
-        // 규칙: /artifacts/{appId}/public/data/{collectionName}/{documentId}
+        const hideLoading = () => {
+            const loader = document.getElementById('loading');
+            if (loader) loader.style.display = 'none';
+        };
+
+        // 로딩이 너무 오래 걸릴 경우(3초) 강제로 해제하는 타임아웃
+        const loadingTimeout = setTimeout(() => {
+            console.warn("Loading timeout reached. Forcing UI render.");
+            hideLoading();
+            renderDashboard();
+            updateStats();
+        }, 3000);
+
         const getStatusDocRef = () => doc(db, 'artifacts', appId, 'public', 'data', 'status_collection', 'tshirt_status');
 
-        // 초기화 및 인증
         const initAuth = async () => {
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -123,7 +134,8 @@
                     await signInAnonymously(auth);
                 }
             } catch (e) {
-                console.error("Auth failed", e);
+                console.error("Auth failed:", e);
+                hideLoading();
             }
         };
 
@@ -134,10 +146,10 @@
             }
         });
 
-        // 실시간 데이터 구독 (Firestore)
         function subscribeToData() {
             const statusDoc = getStatusDocRef();
             onSnapshot(statusDoc, (docSnap) => {
+                clearTimeout(loadingTimeout); // 데이터 수신 시 타임아웃 해제
                 if (docSnap.exists()) {
                     receivedStatus = docSnap.data().status || {};
                 } else {
@@ -145,10 +157,11 @@
                 }
                 renderDashboard();
                 updateStats();
-                document.getElementById('loading').style.display = 'none';
+                hideLoading();
             }, (error) => {
-                console.error("Firestore error", error);
-                document.getElementById('loading').style.display = 'none';
+                console.error("Firestore error:", error);
+                hideLoading();
+                renderDashboard(); // 에러 발생 시에도 빈 데이터로 렌더링 시도
             });
         }
 
@@ -156,21 +169,25 @@
             if (!user) return;
             try {
                 const statusDoc = getStatusDocRef();
-                await setDoc(statusDoc, { status: receivedStatus });
+                await setDoc(statusDoc, { status: receivedStatus }, { merge: true });
             } catch (e) {
-                console.error("Save failed", e);
+                console.error("Save failed:", e);
             }
         }
 
         window.toggleStatus = async function(member, groupId) {
             const key = `${member}-${groupId}`;
             receivedStatus[key] = !receivedStatus[key];
+            renderDashboard(); // 즉시 UI 업데이트
+            updateStats();
             await updateCloudStorage();
         }
 
         window.resetData = async function() {
             if(confirm('모든 수령 현황을 초기화하시겠습니까? 다른 기기에서도 모두 초기화됩니다.')) {
                 receivedStatus = {};
+                renderDashboard();
+                updateStats();
                 await updateCloudStorage();
             }
         }
@@ -193,6 +210,7 @@
         function renderDashboard() {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
             const container = document.getElementById('dashboardContent');
+            if (!container) return;
             container.innerHTML = '';
 
             initialData.forEach(group => {
@@ -241,6 +259,10 @@
         }
 
         document.getElementById('searchInput').addEventListener('input', renderDashboard);
+        
+        // 페이지가 로드되면 즉시 기본 렌더링 수행
+        renderDashboard();
+        updateStats();
         initAuth();
     </script>
 </body>
