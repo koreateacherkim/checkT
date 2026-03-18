@@ -11,16 +11,16 @@
         body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         .checked-item { background-color: #fef2f2; border-color: #fee2e2; color: #ef4444; }
         .checked-item span { color: #ef4444; font-weight: 600; }
-        .loading-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; transition: opacity 0.3s; }
-        .member-chip { transition: all 0.2s; border: 1px solid #f3f4f6; background-color: #f9fafb; color: #4b5563; }
-        .member-chip:hover { background-color: #f3f4f6; }
+        .loading-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; transition: opacity 0.5s; }
+        .member-chip { transition: all 0.2s; border: 1px solid #f3f4f6; background-color: #f9fafb; color: #4b5563; cursor: pointer; }
+        .member-chip:hover { background-color: #f3f4f6; border-color: #e5e7eb; }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen text-gray-800">
     <!-- 로딩 화면 -->
     <div id="loading" class="loading-overlay">
         <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-4"></div>
-        <p class="text-sm text-gray-500 font-medium">데이터를 불러오는 중입니다...</p>
+        <p class="text-sm text-gray-500 font-medium">시스템을 준비 중입니다...</p>
     </div>
 
     <div class="max-w-4xl mx-auto px-4 py-8">
@@ -31,7 +31,7 @@
                     <i class="fas fa-tshirt text-blue-500"></i>
                     티셔츠 불출 관리 대시보드
                 </h1>
-                <p class="text-gray-400 text-xs mt-1">실시간 클라우드 동기화 모드</p>
+                <p class="text-gray-400 text-xs mt-1">실시간 클라우드 동기화 활성화됨</p>
             </div>
             
             <div class="relative">
@@ -59,7 +59,7 @@
 
         <!-- 리스트 컨테이너 -->
         <div id="dashboardContent" class="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-50">
-            <!-- 자바스크립트에서 렌더링됨 -->
+            <!-- 자바스크립트에서 즉시 렌더링됨 -->
         </div>
 
         <!-- 푸터 -->
@@ -78,7 +78,7 @@
         import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = JSON.parse(__firebase_config);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'tshirt-manager-v3';
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'tshirt-manager-vfinal';
         
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -97,23 +97,29 @@
 
         let receivedStatus = {};
         let user = null;
-        let isDataLoaded = false;
 
         const hideLoading = () => {
             const loader = document.getElementById('loading');
-            if (loader) loader.style.display = 'none';
+            if (loader) {
+                loader.style.opacity = '0';
+                setTimeout(() => loader.style.display = 'none', 500);
+            }
         };
 
-        // 안전 장치: 로딩이 2초 이상 지속되면 강제 해제
-        setTimeout(() => {
-            if (!isDataLoaded) {
-                console.log("Forcing load due to timeout");
-                hideLoading();
-                renderDashboard();
-            }
-        }, 2000);
-
         const getStatusDocRef = () => doc(db, 'artifacts', appId, 'public', 'data', 'v1', 'status_data');
+
+        // 메인 실행 흐름
+        window.addEventListener('DOMContentLoaded', () => {
+            // 1. UI 즉시 렌더링 (데이터가 오기 전에도 빈 상태로 보여줌)
+            renderDashboard();
+            updateStats();
+
+            // 2. 강제 로딩 해제 (최대 1.5초 대기)
+            setTimeout(hideLoading, 1500);
+
+            // 3. 인증 및 데이터 연동
+            initAuth();
+        });
 
         const initAuth = async () => {
             try {
@@ -129,25 +135,24 @@
         };
 
         onAuthStateChanged(auth, (u) => {
-            user = u;
-            if (user) subscribeToData();
+            if (u) {
+                user = u;
+                subscribeToData();
+            }
         });
 
         function subscribeToData() {
             const statusDoc = getStatusDocRef();
             onSnapshot(statusDoc, (docSnap) => {
-                isDataLoaded = true;
                 if (docSnap.exists()) {
                     receivedStatus = docSnap.data().status || {};
+                    renderDashboard();
+                    updateStats();
                 }
-                renderDashboard();
-                updateStats();
                 hideLoading();
             }, (error) => {
-                console.error("Snapshot error:", error);
-                isDataLoaded = true;
+                console.error("Firestore error:", error);
                 hideLoading();
-                renderDashboard();
             });
         }
 
@@ -170,7 +175,7 @@
         }
 
         window.resetData = async function() {
-            if(confirm('데이터를 초기화하시겠습니까?')) {
+            if(confirm('모든 수령 현황을 초기화하시겠습니까?')) {
                 receivedStatus = {};
                 renderDashboard();
                 updateStats();
@@ -240,9 +245,6 @@
         }
 
         document.getElementById('searchInput').addEventListener('input', renderDashboard);
-        renderDashboard();
-        updateStats();
-        initAuth();
     </script>
 </body>
 </html>
